@@ -64,7 +64,7 @@ table.jt{width:100%;border-collapse:collapse}.jt th{position:sticky;top:0;backgr
 </div>
 <div class="card" style="margin-top:12px"><h3>Votos por recinto y candidato</h3><div class="ch"><canvas id="cRecAlc"></canvas></div></div>
 
-<h2>2. Avance y participación por recinto</h2>
+<h2>2. Avance y participación por recinto <small id="recNote" style="font-weight:normal;color:#fff;opacity:.9;font-size:12px"></small></h2>
 <div class="grid g3">
  <div class="card" style="grid-column:span 2"><h3>% de juntas escrutadas por recinto</h3><div class="ch s"><canvas id="cAv"></canvas></div></div>
  <div class="card"><h3>Estado de las juntas</h3><div class="ch s"><canvas id="cEst"></canvas></div></div>
@@ -92,7 +92,7 @@ table.jt{width:100%;border-collapse:collapse}.jt th{position:sticky;top:0;backgr
 <div class="grid g32"><div class="card"><h3>Votos y escaños por lista (plancha)</h3><div id="vocRank"></div></div>
  <div class="card"><h3>Votos por lista</h3><div class="ch t"><canvas id="cVoc"></canvas></div></div></div>
 
-<h2>5. Composición del concejo (método D'Hondt)</h2>
+<h2>5. Composición del concejo (método D'Hondt) <small id="compNote" style="font-weight:normal;color:#fff;opacity:.9;font-size:12px"></small></h2>
 <div class="grid g32"><div class="card"><h3>Escaños por lista</h3><div id="compTbl"></div><div id="compEl" style="margin-top:10px"></div></div>
  <div class="card"><h3>Concejo municipal</h3><div class="ch t"><canvas id="cConc"></canvas></div></div></div>
 
@@ -100,7 +100,7 @@ table.jt{width:100%;border-collapse:collapse}.jt th{position:sticky;top:0;backgr
 <div class="card"><div class="tools"><span class="chips" id="estChips"><button class="on" data-e="">Todas</button><button data-e="Escrutada">Escrutadas</button><button data-e="Revisar">Por revisar</button><button data-e="Pendiente">Pendientes</button></span>
 <input id="q" placeholder="Buscar recinto o junta…"><span id="cntJ" class="ks"></span></div>
 <div class="tw"><table class="jt"><thead><tr><th>Recinto</th><th>Junta</th><th>Tipo</th><th>Electores</th><th>Sufragantes</th><th>Particip.</th><th>Estado</th><th>Alertas</th></tr></thead><tbody id="tbJ"></tbody></table></div></div>
-<p class="note"><b>Resultados referenciales</b> según las actas digitadas por el GAD Municipal de Macará; la adjudicación oficial corresponde al CNE. Por defecto la página lee el Excel publicado y se actualiza sola cada 30 segundos; también puede abrir un Excel propio con «Abrir Excel», «Conectar Excel» o arrastrándolo aquí. Blancos y nulos: en alcaldía son votos; en concejales y vocales son papeletas.</p>
+<p class="note"><b>Resultados referenciales</b> según las actas digitadas por Breythner JV; la adjudicación oficial corresponde al CNE. Por defecto la página lee el Excel publicado y se actualiza sola cada 30 segundos; también puede abrir un Excel propio con «Abrir Excel», «Conectar Excel» o arrastrándolo aquí. Blancos y nulos: en alcaldía son votos; en concejales y vocales son papeletas.</p>
 </main>
 <script>/*!
  * Chart.js v4.6.1
@@ -207,11 +207,11 @@ function compute(M, flt){
   // por lista (marcas)
   R.listas=M.listas.filter(l=>l.num||l.alcalde).map(l=>({num:l.num||(String(l.i+1)), li:l.i, partido:l.partido||'', alc:(R.alc.find(c=>c.li===l.i)||{v:0}).v, urb:(R.urb.find(c=>c.li===l.i)||{v:0}).v, rur:(R.rur.find(c=>c.li===l.i)||{v:0}).v}));
   // por recinto (siempre todos, sin filtro)
-  R.recs=M.recintos.map(rc=>{ const js=all.filter(j=>j.recinto===rc.name); const ws=js.filter(j=>j.suf!==undefined);
+  R.recs=M.recintos.filter(rc=>!flt||rc.name===flt).map(rc=>{ const js=all.filter(j=>j.recinto===rc.name); const ws=js.filter(j=>j.suf!==undefined);
     const el=sum(ws.map(j=>j.elect||0));
     return {name:rc.name, tipo:rc.tipo, juntas:js.length, esc:js.filter(j=>j.estado==='Escrutada').length, suf:sum(ws.map(j=>j.suf)), partic:el?sum(ws.map(j=>j.suf))/el:0,
       alc:M.listas.map(l=>l.alcalde?sum(js.map(j=>j.alc[l.i])):0)}; });
-  if(!flt) R.comp=composicion(M,R); else R.comp=composicion(M,compute(M,''));
+  R.comp=composicion(M,R);
   return R;
 }
 function dhondt(votes,n){
@@ -283,7 +283,7 @@ function render(){
     ['Participación urbana',elU?pc(sufU/elU):'0%',`${fmt(sufU)} sufragantes de ${fmt(elU)} electores`,'#1F3A5F',elU?sufU/elU:0],
     ['Blancos + nulos (concejales urbanos)',totU?pc((R.urbBl+R.urbNu)/totU):'0%',`Blancos ${fmt(R.urbBl)} · Nulos ${fmt(R.urbNu)}`,'#E9A23B',null],
     ['Lista líder (concejales urbanos)',lu.length&&lu[0].v>0?esc(short(lu[0].name,30)):'Sin datos',lu.length>1&&lu[0].v>0?`${fmt(lu[0].v-lu[1].v)} votos de ventaja sobre ${esc(short(lu[1].name,30))}`:'','#1F3A5F',null,true],
-    ['Escaños urbanos (D\'Hondt)',CU.asignados?CU.asignados+' de '+M.su:'Sin datos',(segU?`<div class="segs">${segU}</div>`:'')+(CU.tie?'<div class="seg" style="color:#9c0006">⚠ Empate en el último escaño</div>':''),'#D1495B',null,!CU.asignados]);
+    ['Escaños urbanos (D\'Hondt)'+(FLT?' · solo este recinto':''),CU.asignados?CU.asignados+' de '+M.su:'Sin datos',(segU?`<div class="segs">${segU}</div>`:'')+(CU.tie?'<div class="seg" style="color:#9c0006">⚠ Empate en el último escaño</div>':''),'#D1495B',null,!CU.asignados]);
   $('kpis').innerHTML=k.map(x=>`<div class="kpi" style="--c:${x[3]}"><div class="kl">${x[0]}</div><div class="kv${x[5]?' txt':''}">${x[1]}</div>${x[4]!==null?`<div class="kb"><i style="width:${Math.min(100,x[4]*100)}%"></i></div>`:''}<div class="ks">${x[2]}</div></div>`).join('');
   // Alcaldía
   $('alcRank').innerHTML=rank(R.alc,R.alcVal,1,c=>LC(c.li))+bn('Alcaldía',R.alcBl,R.alcNu,R.alcTot)+`<div class="bn"><b>Total votos</b><span><em>${fmt(R.alcTot)}</em></span></div>`;
@@ -323,6 +323,7 @@ function render(){
     mk('cVoc',{type:'bar',data:{labels:ls.map(l=>l.lista+' · '+short(l.partido,20)),datasets:[{data:ls.map(l=>l.v),backgroundColor:ls.map(l=>LC(l.li)),borderRadius:3}]},
       options:{indexAxis:'y',plugins:{legend:{display:false}},scales:{x:{beginAtZero:true,grid:{color:'#eef1f4'}},y:{grid:{display:false}}}}}); }
   // Composición D'Hondt
+  $('compNote').textContent=FLT?'· calculada solo con los votos de: '+FLT:''; $('recNote').textContent=FLT?'· solo: '+FLT:'';
   const C=R.comp, esc2=x=>x.tie?'<p class="empty">⚠ Empate en el último escaño: no se asigna automáticamente.</p>':'';
   $('compTbl').innerHTML=`<table class="rk"><tr><th>Lista</th><th class="r">Urbanos</th><th class="r">Rural</th><th class="r">Concejo</th><th class="r">Vocales</th></tr>`+C.listas.map(l=>`<tr><td><i style="background:${LC(l.li)}"></i>${esc(l.num)} · ${esc(short(l.partido,26))}</td><td class="r">${l.urb}</td><td class="r">${l.rur}</td><td class="r"><b>${l.urb+l.rur}</b></td><td class="r">${l.voc}</td></tr>`).join('')+`</table>`+esc2(C.urb)+esc2(C.rur);
   $('compEl').innerHTML='<h3>Concejales electos</h3>'+([...C.urb.electos,...C.rur.electos].map(e=>`<div>${esc(e.name)} <small>· Lista ${esc(e.lista)} · ${e.tipo}</small></div>`).join('')||'<p class="empty">Sin resultados todavía.</p>')+(C.urb.faltan>0?'<p class="empty">⚠ Faltan candidatos urbanos inscritos.</p>':'');
@@ -373,7 +374,7 @@ window.addEventListener('DOMContentLoaded',()=>{
   } else { $('btnLink').style.display='none'; }
   document.addEventListener('dragover',e=>e.preventDefault());
   document.addEventListener('drop',async e=>{e.preventDefault(); const f=e.dataTransfer.files[0]; if(f){stopLocal(); useLocal(new Uint8Array(await f.arrayBuffer()),f.name);}});
-  $('flt').onchange=e=>{FLT=e.target.value;render();};
+  $('flt').onchange=e=>{FLT=e.target.value; const rc=M.recintos.find(r=>r.name===FLT); const pi=rc?M.parroquias.indexOf(rc.parroquia):-1; if(pi>=0) vocSel=pi; render();};
   $('vocTabs').onclick=e=>{const b=e.target.closest('button'); if(b){vocSel=+b.dataset.i;render();}};
   $('alcMode').onclick=e=>{const b=e.target.closest('button'); if(b){alcMode=b.dataset.m; [...$('alcMode').children].forEach(x=>x.classList.toggle('on',x===b)); render();}};
   $('estChips').onclick=e=>{const b=e.target.closest('button'); if(b){estF=b.dataset.e; [...$('estChips').children].forEach(x=>x.classList.toggle('on',x===b)); renderJuntas();}};
